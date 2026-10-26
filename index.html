@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INGLASS — Dark Collection</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#050505;color:#e0e0e0;overflow-x:hidden}
+:root{--blood:#8a0303;--blood-hover:#b30606;--gold:#d4af37;--dark:#0a0a0a;--panel:#121212;--border:rgba(138,3,3,.4)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulseGold{0%,100%{box-shadow:0 0 15px rgba(212,175,55,.2)}50%{box-shadow:0 0 30px rgba(212,175,55,.6)}}
+@keyframes floatEmber{0%{transform:translateY(0) scale(1);opacity:0}10%{opacity:1}90%{opacity:.5}100%{transform:translateY(-100vh) scale(0);opacity:0}}
+@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+
+.fade-up{opacity:0;animation:fadeUp 1s cubic-bezier(.2,.8,.2,1) forwards}
+
+/* Атмосферный фон (Искры) */
+.embers{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden}
+.ember{position:absolute;bottom:-20px;width:3px;height:3px;background:var(--blood);border-radius:50%;filter:blur(1px);animation:floatEmber linear infinite;box-shadow:0 0 10px var(--blood-hover)}
+
+/* Навигация */
+nav{position:fixed;top:0;width:100%;padding:20px 40px;display:flex;justify-content:space-between;align-items:center;background:rgba(5,5,5,.9);backdrop-filter:blur(10px);z-index:100;border-bottom:1px solid var(--border)}
+.logo{font-family:'Cinzel',serif;font-size:28px;font-weight:900;letter-spacing:4px;background:linear-gradient(90deg,#fff,#d4af37,#fff);background-size:200%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmer 5s linear infinite}
+.nav-links{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.nav-links a{color:#b0b0b0;text-decoration:none;font-size:14px;letter-spacing:1px;text-transform:uppercase;transition:.3s;cursor:pointer}
+.nav-links a:hover{color:var(--gold)}
+.btn-sm{padding:8px 20px;border:1px solid var(--border);background:transparent;color:#fff!important;font-weight:600;transition:.3s;text-transform:none!important}
+.btn-sm:hover{background:var(--blood);border-color:var(--blood)}
+.btn-sm.ghost{border-color:#444}
+.btn-sm.ghost:hover{border-color:#888}
+.btn-sm.green{border-color:var(--gold);color:var(--gold)!important}
+.btn-sm.green:hover{background:var(--gold);color:#000!important}
+
+/* Главный экран */
+.hero{height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;position:relative;background:radial-gradient(circle at 50% 50%,rgba(138,3,3,.15),transparent 60%);z-index:2}
+.hero h1{font-family:'Cinzel',serif;font-size:80px;font-weight:900;letter-spacing:10px;color:#fff;margin-bottom:20px;text-shadow:0 0 30px rgba(138,3,3,.5)}
+.hero p{font-size:18px;color:#999;margin-bottom:40px;max-width:600px;letter-spacing:1px;line-height:1.6}
+.btn{padding:15px 40px;border:1px solid var(--gold);background:transparent;color:var(--gold);font-family:'Cinzel',serif;font-size:16px;cursor:pointer;transition:.3s;letter-spacing:2px;text-transform:uppercase;font-weight:700}
+.btn:hover{background:var(--gold);color:#000;box-shadow:0 0 20px rgba(212,175,55,.4)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* Секции */
+section{padding:100px 40px;max-width:1300px;margin:0 auto;position:relative;z-index:2}
+.reveal{opacity:0;transform:translateY(40px);transition:all 1s cubic-bezier(.2,.8,.2,1)}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.section-title{font-family:'Cinzel',serif;font-size:42px;text-align:center;margin-bottom:60px;color:#fff;letter-spacing:2px}
+.section-title span{color:var(--blood);font-style:italic}
+
+/* Категории */
+.cats{display:flex;gap:15px;justify-content:center;flex-wrap:wrap;margin-bottom:50px}
+.cat{padding:10px 24px;border:1px solid #333;background:transparent;color:#999;cursor:pointer;transition:.3s;text-transform:uppercase;font-size:13px;letter-spacing:1px}
+.cat:hover,.cat.active{border-color:var(--gold);color:var(--gold)}
+
+/* Карточки товаров */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:30px}
+.card{background:var(--panel);border:1px solid #222;overflow:hidden;transition:.4s;cursor:pointer;position:relative}
+.card:hover{border-color:var(--gold);box-shadow:0 10px 30px rgba(138,3,3,.3);transform:translateY(-5px)}
+.card img{width:100%;height:300px;object-fit:cover;transition:.6s;filter:grayscale(.3) contrast(1.1)}
+.card:hover img{transform:scale(1.05);filter:grayscale(0) contrast(1.1)}
+.card-body{padding:25px;text-align:center;border-top:1px solid #222}
+.card-body h3{font-family:'Cinzel',serif;font-size:20px;margin-bottom:10px;color:#fff}
+.card-body .price{color:var(--gold);font-size:18px;font-weight:600;letter-spacing:1px}
+
+/* Модалки */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:200;justify-content:center;align-items:center;backdrop-filter:blur(5px);padding:20px}
+.modal.open{display:flex}
+.modal-box{background:#0a0a0a;border:1px solid var(--border);padding:35px;width:100%;max-width:900px;max-height:95vh;overflow-y:auto;position:relative;box-shadow:0 0 50px rgba(138,3,3,.15)}
+.modal-box.small{max-width:450px}
+.modal-box h2{font-family:'Cinzel',serif;margin-bottom:25px;color:#fff;text-align:center;font-size:24px}
+.close-btn{position:absolute;top:15px;right:20px;background:none;border:none;color:#666;font-size:24px;cursor:pointer;transition:.3s}
+.close-btn:hover{color:var(--blood)}
+
+/* Формы и Инпуты */
+input,select,textarea{width:100%;padding:14px;margin-bottom:15px;background:#111;border:1px solid #333;color:#fff;font-family:'Inter',sans-serif;font-size:14px;transition:.3s;outline:none}
+input:focus,select:focus{border-color:var(--blood)}
+input::placeholder,textarea::placeholder{color:#555}
+
+/* Окно товара */
+.product-layout{display:grid;grid-template-columns:1fr 1fr;gap:30px}
+@media(max-width:768px){.product-layout{grid-template-columns:1fr}}
+.product-img{width:100%;height:100%;object-fit:cover;border:1px solid #222}
+.p-info h3{font-family:'Cinzel',serif;color:var(--gold);font-size:28px;margin-bottom:15px}
+.p-info .price{font-size:32px;color:#fff;font-weight:300;margin-bottom:25px;border-bottom:1px solid #333;padding-bottom:20px}
+
+/* Блок оплаты */
+.payment-box{background:rgba(138,3,3,.05);border:1px dashed var(--blood);padding:20px;margin-top:20px;text-align:center}
+.payment-box p{font-size:14px;color:#aaa;margin-bottom:10px}
+.payment-box strong{font-size:22px;color:#fff;letter-spacing:2px;font-family:'Cinzel',serif;display:block;margin-bottom:15px}
+.payment-box input[type="file"]{border:none;padding:0;font-size:12px;color:#888}
+
+/* Чат */
+.chat-box{background:#0d0d0d;border:1px solid #333;display:flex;flex-direction:column;height:450px}
+.chat-header{background:#111;padding:15px;text-align:center;font-weight:600;color:var(--gold);border-bottom:1px solid #333;letter-spacing:1px;font-size:14px;text-transform:uppercase}
+.chat-messages{flex:1;padding:20px;overflow-y:auto;display:flex;flex-direction:column;gap:15px}
+.msg{max-width:85%;padding:12px 18px;font-size:14px;line-height:1.5;border-radius:2px}
+.msg.my-msg{align-self:flex-end;background:#1f1f1f;color:#eee;border-right:3px solid var(--gold)}
+.msg.their-msg{align-self:flex-start;background:rgba(138,3,3,.1);color:#ddd;border-left:3px solid var(--blood)}
+.msg-time{font-size:10px;opacity:.5;margin-top:5px;text-align:right}
+.chat-input{display:flex;padding:10px;background:#111;border-top:1px solid #333}
+.chat-input input{border:none;margin:0;padding:15px;background:transparent}
+.chat-input button{background:transparent;border:none;color:var(--blood);font-size:20px;cursor:pointer;padding:0 15px;transition:.3s}
+.chat-input button:hover{color:var(--blood-hover)}
+
+/* Панель Админа / Продавца */
+#adminPanel{display:none;position:fixed;top:0;right:0;width:450px;height:100%;background:#080808;z-index:300;overflow-y:auto;padding:40px 30px;border-left:1px solid var(--border);box-shadow:-10px 0 50px rgba(0,0,0,.8)}
+#adminPanel.open{display:block;animation:fadeUp .4s}
+#adminPanel h2{font-family:'Cinzel',serif;color:var(--gold);margin-bottom:5px;font-size:22px}
+#adminPanel h3{color:#fff;margin:30px 0 15px;font-size:14px;text-transform:uppercase;letter-spacing:2px;border-bottom:1px solid #222;padding-bottom:10px}
+.admin-item{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #222;font-size:13px;color:#aaa}
+.admin-item button{background:none;border:none;color:#666;cursor:pointer;transition:.3s;font-size:16px}
+.admin-item button:hover{color:var(--blood)}
+
+/* Бейджики */
+.badge{background:var(--gold);color:#000;padding:2px 8px;font-size:10px;font-weight:800;text-transform:uppercase;border-radius:2px;margin-left:5px;letter-spacing:1px}
+
+/* Уведомления */
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(100px);background:#111;border:1px solid var(--gold);color:var(--gold);padding:15px 30px;z-index:500;transition:.4s;opacity:0;font-weight:600;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.8)}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.err{border-color:var(--blood);color:var(--blood)}
+
+/* Список чатов */
+.chat-list-item{background:#111;border:1px solid #222;padding:15px;margin-bottom:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:.3s}
+.chat-list-item:hover{border-color:var(--gold)}
+.chat-list-item span{font-size:14px;color:#ccc}
+
+.hidden{display:none!important}
+.loader{text-align:center;color:#666;padding:20px;font-size:14px}
+</style>
+</head>
+<body>
+
+<div class="embers" id="embers"></div>
+
+<nav>
+  <div class="logo">INGLASS</div>
+  <div class="nav-links">
+    <a href="#catalog">Коллекция</a>
+    <a href="#contact">Контакты</a>
+    <a id="sellerDashboardBtn" class="btn-sm green hidden" onclick="openSellerDashboard()">💬 Чаты</a>
+    <a id="adminBtn" class="btn-sm hidden" onclick="toggleAdminPanel()">Админ</a>
+    <a id="loginBtn" class="btn-sm" onclick="openAuth('login')">Войти</a>
+    <a id="registerBtn" class="btn-sm ghost" onclick="openAuth('register')">Регистрация</a>
+    <a id="logoutBtn" class="btn-sm ghost hidden" onclick="logout()">Выйти</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1 class="fade-up">INGLASS</h1>
+  <p class="fade-up" style="animation-delay:.2s">Эксклюзивные украшения из смолы. Тёмная коллекция ручной работы.</p>
+  <button class="btn fade-up" style="animation-delay:.4s" onclick="document.getElementById('catalog').scrollIntoView({behavior:'smooth'})">Открыть каталог</button>
+</div>
+
+<section id="catalog" class="reveal">
+  <h2 class="section-title">Тёмная <span>коллекция</span></h2>
+  <div class="cats" id="cats">
+    <div class="cat active" data-cat="all">Все</div>
+    <div class="cat" data-cat="Серьги">Серьги</div>
+    <div class="cat" data-cat="Кулоны">Кулоны</div>
+    <div class="cat" data-cat="Браслеты">Браслеты</div>
+    <div class="cat" data-cat="Кольца">Кольца</div>
+  </div>
+  <div class="grid" id="products"><div class="loader">Загрузка...</div></div>
+</section>
+
+<section id="contact" class="reveal">
+  <h2 class="section-title">Связаться <span>с нами</span></h2>
+  <div style="display:flex;flex-direction:column;gap:15px;max-width:400px;margin:0 auto">
+    <a href="tel:+79914529285" style="color:#ccc;text-decoration:none;text-align:center;padding:15px;border:1px solid #333;transition:.3s" onmouseover="this.style.borderColor='#d4af37';this.style.color='#d4af37'" onmouseout="this.style.borderColor='#333';this.style.color='#ccc'">📞 +7 991 452-92-85</a>
+    <a href="https://vk.com/helen11344" target="_blank" style="color:#ccc;text-decoration:none;text-align:center;padding:15px;border:1px solid #333;transition:.3s" onmouseover="this.style.borderColor='#d4af37';this.style.color='#d4af37'" onmouseout="this.style.borderColor='#333';this.style.color='#ccc'">ВКонтакте</a>
+    <a href="https://t.me/Medyanka" target="_blank" style="color:#ccc;text-decoration:none;text-align:center;padding:15px;border:1px solid #333;transition:.3s" onmouseover="this.style.borderColor='#d4af37';this.style.color='#d4af37'" onmouseout="this.style.borderColor='#333';this.style.color='#ccc'">Telegram</a>
+  </div>
+</section>
+
+<!-- Модалка Авторизации -->
+<div class="modal" id="authModal">
+  <div class="modal-box small">
+    <button class="close-btn" onclick="closeAuth()">✕</button>
+    <h2>Вход</h2>
+    <div style="display:flex;gap:10px;margin-bottom:25px">
+      <button class="tab active" data-tab="login" style="flex:1;padding:10px;background:transparent;border:none;border-bottom:1px solid var(--gold);color:#fff;cursor:pointer" onclick="switchTab('login')">Войти</button>
+      <button class="tab" data-tab="register" style="flex:1;padding:10px;background:transparent;border:none;border-bottom:1px solid #333;color:#666;cursor:pointer" onclick="switchTab('register')">Регистрация</button>
+    </div>
+    <div id="tab-login">
+      <input type="email" id="loginEmail" placeholder="Email">
+      <input type="password" id="loginPass" placeholder="Пароль">
+      <button class="btn" style="width:100%" id="loginSubmitBtn" onclick="doLogin()">Войти</button>
+    </div>
+    <div id="tab-register" class="hidden">
+      <input type="email" id="regEmail" placeholder="Email">
+      <input type="password" id="regPass" placeholder="Пароль (мин. 6 символов)">
+      <button class="btn" style="width:100%" id="regSubmitBtn" onclick="doRegister()">Создать аккаунт</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модалка Товара с Чатом и Оплатой -->
+<div class="modal" id="productModal">
+  <div class="modal-box">
+    <button class="close-btn" onclick="closeProductModal()">✕</button>
+    <div class="product-layout">
+      <div>
+        <img id="modalProdImg" class="product-img" src="" alt="Товар">
+        <div class="p-info" style="margin-top:20px">
+          <h3 id="modalProdName"></h3>
+          <div class="price" id="modalProdPrice"></div>
+        </div>
+        
+        <div class="payment-box">
+          <p>Переведите сумму на карту Т-Банк:</p>
+          <strong>+7 991 452-92-85</strong>
+          <p style="margin-bottom:5px">Прикрепите скриншот чека:</p>
+          <input type="file" id="receiptFile" accept="image/*">
+          <button class="btn" style="width:100%;padding:12px;font-size:14px;margin-top:10px" id="payBtn" onclick="submitPayment()">Я оплатил(а)</button>
+        </div>
+      </div>
+      
+      <div class="chat-box">
+        <div class="chat-header">Обсудить детали <span class="badge">Online</span></div>
+        <div class="chat-messages" id="chatMessages">
+          <div style="text-align:center;font-size:12px;color:#666;padding:10px">Задайте вопрос перед оплатой</div>
+        </div>
+        <div class="chat-input">
+          <input type="text" id="chatInput" placeholder="Написать сообщение..." onkeypress="if(event.key==='Enter') sendMessage()">
+          <button onclick="sendMessage()">➤</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Панель Админа -->
+<div id="adminPanel">
+  <h2>Управление</h2>
+  <div style="font-size:12px;color:#666;margin-bottom:20px" id="adminEmailLabel"></div>
+  <button class="btn" style="width:100%;padding:10px;font-size:12px" onclick="logout()">Выйти</button>
+
+  <h3>Добавить товар</h3>
+  <input type="text" id="pName" placeholder="Название">
+  <input type="number" id="pPrice" placeholder="Цена (₽)">
+  <select id="pCat"><option>Серьги</option><option>Кулоны</option><option>Браслеты</option><option>Кольца</option></select>
+  
+  <div style="background:#111;padding:15px;border:1px solid #333;margin-bottom:15px">
+    <p style="font-size:12px;color:#aaa;margin-bottom:10px">Способ 1: Ссылка на фото</p>
+    <input type="url" id="pImgUrl" placeholder="https://..." style="margin-bottom:0">
+  </div>
+  
+  <div style="background:#111;padding:15px;border:1px solid #333;margin-bottom:15px">
+    <p style="font-size:12px;color:#aaa;margin-bottom:10px">Способ 2: Загрузить файл</p>
+    <input type="file" id="pFile" accept="image/*" style="margin-bottom:0;border:none;padding:0">
+  </div>
+
+  <button class="btn" style="width:100%" id="addProductBtn" onclick="addProduct()">Добавить в каталог</button>
+
+  <h3>Заказы (Чеки)</h3>
+  <div id="adminOrders"><div class="loader">Загрузка...</div></div>
+
+  <h3>Товары в базе</h3>
+  <div id="adminProducts"><div class="loader">Загрузка...</div></div>
+</div>
+
+<!-- Модалка выбора чатов для Продавца/Админа -->
+<div class="modal" id="chatListModal">
+  <div class="modal-box small">
+    <button class="close-btn" onclick="document.getElementById('chatListModal').classList.remove('open')">✕</button>
+    <h2>Входящие сообщения</h2>
+    <div id="adminChatList"><div class="loader">Загрузка...</div></div>
+  </div>
+</div>
+
+<!-- Модалка чата для Продавца/Админа -->
+<div class="modal" id="adminChatModal">
+  <div class="modal-box small" style="padding:15px">
+    <button class="close-btn" onclick="closeAdminChat()">✕</button>
+    <h2 id="adminChatTitle" style="font-size:16px;margin-bottom:15px">Чат</h2>
+    <div class="chat-box" style="height:450px">
+      <div class="chat-messages" id="adminChatMessages"></div>
+      <div class="chat-input">
+        <input type="text" id="adminChatInput" placeholder="Ответ..." onkeypress="if(event.key==='Enter') sendAdminMessage()">
+        <button onclick="sendAdminMessage()">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ SUPABASE ============ */
+const SUPABASE_URL = 'https://vhaxlmscrqrgfymbkilz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZoYXhsbXNjcnFyZ2Z5bWJraWx6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMwMTcxMDYsImV4cCI6MjEwODU5MzEwNn0.iILx34CoC_Y_l2lotuucqU8ozhRB5nteLHx3N3Bw0bU';
+const ADMIN_EMAIL = 'larkindenis48@gmail.com';
+const SELLER_EMAIL = 'trifonova_alena1994@mail.com';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let products = [];
+let currentCat = 'all';
+let userSession = null;
+let isAdmin = false;
+let isSeller = false;
+let currentChatId = null;
+let realtimeChannel = null;
+let adminCurrentChatId = null;
+let adminRealtimeChannel = null;
+
+/* ============ ИСКРЫ (АТМОСФЕРА) ============ */
+(function spawnEmbers(){
+  const box = document.getElementById('embers');
+  for(let i=0; i<30; i++){
+    const e = document.createElement('div');
+    e.className = 'ember';
+    e.style.left = Math.random()*100 + '%';
+    e.style.animationDuration = (5 + Math.random()*10) + 's';
+    e.style.animationDelay = (Math.random()*5) + 's';
+    box.appendChild(e);
+  }
+})();
+
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+function toast(msg, err){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (err ? ' err' : '');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 3200);
+}
+function esc(s){ return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+/* ============ ТОВАРЫ ============ */
+async function loadProducts(){
+  const { data, error } = await sb.from('products').select('*').order('created_at', { ascending: false });
+  if(error){ console.error(error); return; }
+  products = data || [];
+  renderProducts();
+  renderAdminProducts();
+  if(isAdmin || isSeller) loadAdminOrders();
+}
+
+function renderProducts(){
+  const el = document.getElementById('products');
+  const list = currentCat === 'all' ? products : products.filter(p => p.category === currentCat);
+  el.innerHTML = list.length ? list.map((p,i) => `
+    <div class="card" style="animation-delay:${i*0.05}s" onclick="openProductModal(${p.id})">
+      <img src="${p.image_url || ''}" alt="${esc(p.name)}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22280%22 height=%22300%22%3E%3Crect fill=%22%23121212%22 width=%22280%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%23333%22 text-anchor=%22middle%22 font-size=%2220%22 font-family=%22serif%22%3EINGLASS%3C/text%3E%3C/svg%3E'">
+      <div class="card-body">
+        <h3>${esc(p.name)}</h3>
+        <div class="price">${p.price} ₽</div>
+      </div>
+    </div>`).join('')
+    : '<p style="text-align:center;color:#555;grid-column:1/-1;padding:40px">Коллекция пуста</p>';
+}
+
+/* ============ АВТОРИЗАЦИЯ ============ */
+function openAuth(tab){ document.getElementById('authModal').classList.add('open'); switchTab(tab); }
+function closeAuth(){ document.getElementById('authModal').classList.remove('open'); }
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === name);
+    t.style.borderBottomColor = t.classList.contains('active') ? 'var(--gold)' : '#333';
+    t.style.color = t.classList.contains('active') ? '#fff' : '#666';
+  });
+  document.getElementById('tab-login').classList.toggle('hidden', name !== 'login');
+  document.getElementById('tab-register').classList.toggle('hidden', name !== 'register');
+}
+
+async function doRegister(){
+  const email = document.getElementById('regEmail').value.trim();
+  const pass = document.getElementById('regPass').value;
+  if(!email || !pass || pass.length < 6){ toast('Пароль 6+ символов', true); return; }
+  const btn = document.getElementById('regSubmitBtn'); btn.disabled = true;
+  const { data, error } = await sb.auth.signUp({ email, password: pass });
+  btn.disabled = false;
+  if(error){ toast(error.message, true); return; }
+  if(data.session){ closeAuth(); applySession(data.session); toast('Готово'); }
+  else { toast('Проверьте почту'); switchTab('login'); }
+}
+
+async function doLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  if(!email || !pass){ return; }
+  const btn = document.getElementById('loginSubmitBtn'); btn.disabled = true;
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  btn.disabled = false;
+  if(error){ toast(error.message, true); return; }
+  closeAuth(); applySession(data.session); toast('Вход выполнен');
+}
+
+async function logout(){
+  await sb.auth.signOut();
+  applySession(null);
+  toast('Вы вышли');
+}
+
+function applySession(session){
+  userSession = session;
+  const user = session?.user;
+  isAdmin = !!(user && user.email === ADMIN_EMAIL);
+  isSeller = !!(user && user.email === SELLER_EMAIL);
+
+  document.getElementById('loginBtn').classList.toggle('hidden', !!user);
+  document.getElementById('registerBtn').classList.toggle('hidden', !!user);
+  document.getElementById('logoutBtn').classList.toggle('hidden', !user);
+  document.getElementById('adminBtn').classList.toggle('hidden', !isAdmin);
+  document.getElementById('sellerDashboardBtn').classList.toggle('hidden', !(isSeller || isAdmin));
+
+  if(isAdmin){
+    document.getElementById('adminPanel').classList.add('open');
+    document.getElementById('adminEmailLabel').innerHTML = `${user.email} <span class="badge" style="background:#8a0303;color:#fff">Админ</span>`;
+  } else if(isSeller){
+    document.getElementById('adminEmailLabel').innerHTML = `${user.email} <span class="badge">Продавец ✔</span>`;
+  } else {
+    document.getElementById('adminPanel').classList.remove('open');
+  }
+}
+
+/* ============ ЧАТ КЛИЕНТА ============ */
+async function openProductModal(id){
+  if(!userSession){ toast('Войдите, чтобы написать', true); openAuth('login'); return; }
+  const p = products.find(x => x.id === id);
+  if(!p) return;
+
+  document.getElementById('modalProdImg').src = p.image_url || '';
+  document.getElementById('modalProdName').textContent = p.name;
+  document.getElementById('modalProdPrice').textContent = p.price + ' ₽';
+  document.getElementById('productModal').classList.add('open');
+  document.getElementById('chatMessages').innerHTML = '<div class="loader">Загрузка...</div>';
+
+  const userEmail = userSession.user.email;
+  let { data: chat } = await sb.from('chats').select('id').eq('user_email', userEmail).single();
+
+  if(!chat){
+    const { data: newChat } = await sb.from('chats').insert({ user_email: userEmail }).select().single();
+    if(newChat) chat = newChat;
+  }
+
+  if(chat){
+    currentChatId = chat.id;
+    await loadClientMessages();
+    if(realtimeChannel) sb.removeChannel(realtimeChannel);
+    realtimeChannel = sb.channel('client_chat')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${currentChatId}` }, () => {
+        loadClientMessages();
+      }).subscribe();
+  }
+}
+
+function closeProductModal(){
+  document.getElementById('productModal').classList.remove('open');
+  if(realtimeChannel) { sb.removeChannel(realtimeChannel); realtimeChannel = null; }
+  currentChatId = null;
+}
+
+async function loadClientMessages(){
+  const { data } = await sb.from('messages').select('*').eq('chat_id', currentChatId).order('created_at');
+  const box = document.getElementById('chatMessages');
+  if(!data || !data.length){ box.innerHTML = ''; return; }
+  box.innerHTML = data.map(m => `
+    <div class="msg ${m.sender_email === userSession.user.email ? 'my-msg' : 'their-msg'}">
+      ${esc(m.text)}
+      <div class="msg-time">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+    </div>
+  `).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+async function sendMessage(){
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if(!text || !currentChatId) return;
+  input.value = '';
+  await sb.from('messages').insert({ chat_id: currentChatId, sender_email: userSession.user.email, text });
+}
+
+/* ============ ОПЛАТА ============ */
+async function submitPayment(){
+  const file = document.getElementById('receiptFile').files[0];
+  if(!file){ toast('Прикрепите скриншот чека', true); return; }
+  const pName = document.getElementById('modalProdName').textContent;
+  const btn = document.getElementById('payBtn');
+  btn.disabled = true; btn.textContent = 'Отправка...';
+
+  try {
+    const ext = file.name.split('.').pop() || 'jpg';
+    const path = `${Date.now()}_${userSession.user.email}.${ext}`;
+    const { error: upErr } = await sb.storage.from('receipts').upload(path, file);
+    if(upErr) throw upErr;
+    const { data: urlData } = sb.storage.from('receipts').getPublicUrl(path);
+
+    await sb.from('orders').insert({
+      user_email: userSession.user.email,
+      product_name: pName,
+      receipt_url: urlData.publicUrl
+    });
+
+    toast('✅ Заявка отправлена. Ожидайте связи.');
+    document.getElementById('receiptFile').value = '';
+    closeProductModal();
+  } catch(e){
+    toast('Ошибка: ' + e.message, true);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Я оплатил(а)';
+  }
+}
+
+/* ============ ПАНЕЛЬ ПРОДАВЦА ============ */
+async function openSellerDashboard(){
+  document.getElementById('chatListModal').classList.add('open');
+  const box = document.getElementById('adminChatList');
+  box.innerHTML = '<div class="loader">Загрузка...</div>';
+  
+  const { data: chats } = await sb.from('chats').select('*').order('updated_at', { ascending: false });
+  if(!chats || !chats.length){ box.innerHTML = '<p style="color:#666;text-align:center">Нет чатов</p>'; return; }
+
+  box.innerHTML = chats.map(c => `
+    <div class="chat-list-item" onclick="openAdminChat('${c.id}', '${esc(c.user_email)}')">
+      <span>${esc(c.user_email)}</span>
+      <span style="color:var(--gold);font-size:12px">Открыть ➤</span>
+    </div>
+  `).join('');
+}
+
+async function openAdminChat(chatId, userEmail){
+  adminCurrentChatId = chatId;
+  document.getElementById('adminChatTitle').textContent = userEmail;
+  document.getElementById('adminChatModal').classList.add('open');
+  
+  await loadAdminChatMessages();
+  if(adminRealtimeChannel) sb.removeChannel(adminRealtimeChannel);
+  adminRealtimeChannel = sb.channel('admin_chat')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, () => {
+      loadAdminChatMessages();
+    }).subscribe();
+}
+
+function closeAdminChat(){
+  document.getElementById('adminChatModal').classList.remove('open');
+  if(adminRealtimeChannel) { sb.removeChannel(adminRealtimeChannel); adminRealtimeChannel = null; }
+  adminCurrentChatId = null;
+}
+
+async function loadAdminChatMessages(){
+  const { data } = await sb.from('messages').select('*').eq('chat_id', adminCurrentChatId).order('created_at');
+  const box = document.getElementById('adminChatMessages');
+  if(!data || !data.length){ box.innerHTML = '<p style="text-align:center;color:#666;font-size:12px">Нет сообщений</p>'; return; }
+  const myEmail = userSession.user.email;
+  box.innerHTML = data.map(m => `
+    <div class="msg ${m.sender_email === myEmail ? 'my-msg' : 'their-msg'}">
+      ${esc(m.text)}
+      <div class="msg-time">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+    </div>
+  `).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+async function sendAdminMessage(){
+  const input = document.getElementById('adminChatInput');
+  const text = input.value.trim();
+  if(!text || !adminCurrentChatId) return;
+  input.value = '';
+  await sb.from('messages').insert({ chat_id: adminCurrentChatId, sender_email: userSession.user.email, text });
+}
+
+/* ============ АДМИН (ТОВАРЫ И ЗАКАЗЫ) ============ */
+function toggleAdminPanel(){ document.getElementById('adminPanel').classList.toggle('open'); }
+
+async function addProduct(){
+  if(!isAdmin) return;
+  const name = document.getElementById('pName').value.trim();
+  const price = parseInt(document.getElementById('pPrice').value);
+  const category = document.getElementById('pCat').value;
+  const url = document.getElementById('pImgUrl').value.trim();
+  const file = document.getElementById('pFile').files[0];
+
+  if(!name || !price){ toast('Заполните название и цену', true); return; }
+  const btn = document.getElementById('addProductBtn'); btn.disabled = true; btn.textContent = 'Загрузка...';
+
+  try {
+    let image_url = url || '';
+    
+    // Если выбран файл, загружаем его
+    if(file){
+      const ext = file.name.split('.').pop();
+      const path = `img_${Date.now()}.${ext}`;
+      const { error: upErr } = await sb.storage.from('products').upload(path, file);
+      if(upErr) throw upErr;
+      const { data: u } = sb.storage.from('products').getPublicUrl(path);
+      image_url = u.publicUrl;
+    }
+
+    const { error } = await sb.from('products').insert({ name, price, category, image_url });
+    if(error) throw error;
+    
+    document.getElementById('pName').value = ''; document.getElementById('pPrice').value = '';
+    document.getElementById('pImgUrl').value = ''; document.getElementById('pFile').value = '';
+    toast('Товар добавлен');
+    await loadProducts();
+  } catch(e){ 
+    toast('Ошибка: ' + e.message, true); 
+  } finally { 
+    btn.disabled = false; btn.textContent = 'Добавить в каталог'; 
+  }
+}
+
+async function deleteProduct(id){
+  if(!isAdmin) return;
+  if(!confirm('Удалить?')) return;
+  await sb.from('products').delete().eq('id', id);
+  loadProducts();
+}
+
+function renderAdminProducts(){
+  const ap = document.getElementById('adminProducts');
+  if(!ap) return;
+  ap.innerHTML = products.length
+    ? products.map(p => `<div class="admin-item"><span>${esc(p.name)}</span><button onclick="deleteProduct(${p.id})">✕</button></div>`).join('')
+    : '<p style="color:#555;font-size:12px">Пусто</p>';
+}
+
+async function loadAdminOrders(){
+  const { data } = await sb.from('orders').select('*').order('created_at', { ascending: false });
+  const box = document.getElementById('adminOrders');
+  if(!box) return;
+  if(!data || !data.length){ box.innerHTML = '<p style="color:#555;font-size:12px">Нет заказов</p>'; return; }
+  box.innerHTML = data.map(o => `
+    <div class="admin-item" style="flex-direction:column;align-items:flex-start;padding:15px 0">
+      <div style="color:#fff;margin-bottom:5px">${esc(o.user_email)}</div>
+      <div style="font-size:12px;color:#999;margin-bottom:5px">Товар: ${esc(o.product_name)}</div>
+      <a href="${o.receipt_url}" target="_blank" style="color:var(--gold);font-size:12px;text-decoration:none">Посмотреть чек ↗</a>
+    </div>
+  `).join('');
+}
+
+/* ============ СТАРТ ============ */
+document.querySelectorAll('.cat').forEach(c => {
+  c.onclick = () => {
+    document.querySelectorAll('.cat').forEach(x => x.classList.remove('active'));
+    c.classList.add('active');
+    currentCat = c.dataset.cat;
+    renderProducts();
+  };
+});
+
+(async function init(){
+  const { data: { session } } = await sb.auth.getSession();
+  applySession(session);
+  await loadProducts();
+
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if(event === 'SIGNED_IN' || event === 'SIGNED_OUT'){
+      applySession(session);
+    }
+  });
+})();
+</script>
+</body>
+</html>
